@@ -1,0 +1,8 @@
+{
+  "name": "hn-comment-backup",
+  "version": "0.0.1",
+  "description": "Make an offline/readable backup of your HN comment history",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
