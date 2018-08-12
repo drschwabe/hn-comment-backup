@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Make an offline/readable backup of your HN comment history",
   "dependencies": {
+    "config": "^2.0.1",
     "express": "^4.16.2",
     "nightmare": "2.10.0"
   }
