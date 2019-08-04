@@ -12,35 +12,34 @@ const express = require('express')
 const app = express()
 app.listen(port, () => console.log('HN comment backup available at: \nhttp://localhost:' + port))
 
-//Start Nightmare which will crawl news.ycombinator.com: 
+//Start Nightmare which will crawl news.ycombinator.com:
 const Nightmare = require('nightmare')
 var nightmare = new Nightmare({
-  show: false, 
+  show: false,
   alwaysOnTop : false
 })
-.on('console', function(type, msg, errorStack) { 
-  console.log(msg) 
-  if(errorStack) console.log(errorStack)  
-}) 
+.on('console', function(type, msg, errorStack) {
+  console.log(msg)
+  if(errorStack) console.log(errorStack)
+})
 
 //Write file after we receive result...
 const fs = require('fs')
 
 //go!
-console.log('fetching/parsing profile page...') 
+console.log('fetching/parsing profile page...')
 nightmare
 .goto('https://news.ycombinator.com/threads?id=' + config.get('user'))
 .wait(1000)
 .end()
-.evaluate(()=> document.body.outerHTML)
+.evaluate(()=> document)
 .then((result) => {
   console.log('result downloaded')
-  const template = fs.readFileSync('./template.html')
-  fs.writeFile('./page.html', template + result + + '</body></html>', 'utf8', (err) => {
+  fs.writeFile('./output/page.html', result, 'utf8', (err) => {
     if(err) return console.log(err)
-    console.log('page.html written.')      
+    console.log('page.html written.')
   })
 })
 
 //find more link, click it
-//if no more link - we done ! 
+//if no more link - we done !
