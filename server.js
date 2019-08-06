@@ -1,45 +1,72 @@
 //## HN Comment Backup ###
+const _ = require('underscore')
+const async = require('async')
 
-
-//Use config (./default.json or local.json to override)
-//for port and user values
+//Make a config file (./config/local.json to override)
 const config = require('config')
-var port = config.get('port')
-var user = config.get('user')
+const user = config.get('user')
 
-//Start an Express server
-const express = require('express')
-const app = express()
-app.listen(port, () => console.log('HN comment backup available at: \nhttp://localhost:' + port))
 
-//Start Nightmare which will crawl news.ycombinator.com:
+const scrape = require('website-scraper');
+const options = {
+  urls: ['https://news.ycombinator.com/threads?id=' + user],
+  directory: process.cwd() + '/output/' + user
+}
+
+const scrapeAllPages = () => {
+  console.log('scrape all pages...')
+  async.eachSeries(commentPageURLs, (err, callback) => {
+    scrape(options, (err, result) => {
+    	if(err) return console.log(err)
+    	console.log(result)
+      setTimeout( callback, 5500 )
+    })
+  }, (err) => {
+    if(err) return console.err(err)
+    console.log('all done! backup written to: ')
+    console.log('process.cwd()' + '/output')
+  })
+}
+
+//Nightmare which will crawl news.ycombinator.com:
 const Nightmare = require('nightmare')
 var nightmare = new Nightmare({
   show: false,
   alwaysOnTop : false
 })
-.on('console', function(type, msg, errorStack) {
-  console.log(msg)
-  if(errorStack) console.log(errorStack)
-})
 
-//Write file after we receive result...
-const fs = require('fs')
+//There is a "More" link on each page with a URL parameter called 'next' that we need to get in order to build an index of all  pages of the user's comments
+var commentPageURLs = []
+
+const clickMoreLink = () => {
+  nightmare
+  .wait(5500)
+  .click('.morelink')
+  .wait('body')
+  .evaluate(()=> location.href)
+  .then((result) => {
+    console.log(result)
+    commentPageURLs.push(result)
+    if(_.isEmpty(commentPageURLs)) return console.log('done')
+    clickMoreLink()
+  })
+  .catch((e) => {
+    if(e == 'Unable to find element by selector: .morelink') {
+      console.log('retreived all comment page URLs...')
+      scrapeAllPages()
+    } else {
+      console.log(e)
+    }
+  })
+}
 
 //go!
-console.log('fetching/parsing profile page...')
+console.log('building list of comment page URLs...')
+
+//perform the initialization; start on user's comment page 1:
 nightmare
 .goto('https://news.ycombinator.com/threads?id=' + config.get('user'))
-.wait(1000)
-.end()
-.evaluate(()=> document)
-.then((result) => {
-  console.log('result downloaded')
-  fs.writeFile('./output/page.html', result, 'utf8', (err) => {
-    if(err) return console.log(err)
-    console.log('page.html written.')
-  })
+.wait('body')
+.then(() => {
+  clickMoreLink()
 })
-
-//find more link, click it
-//if no more link - we done !
