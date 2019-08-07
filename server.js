@@ -5,6 +5,7 @@ const async = require('async')
 //Make a config file (./config/local.json to override)
 const config = require('config')
 const user = config.get('user')
+const delay = config.get('delay') //ms 
 
 
 const scrape = require('website-scraper');
@@ -19,7 +20,7 @@ const scrapeAllPages = () => {
     scrape(options, (err, result) => {
     	if(err) return console.log(err)
     	console.log(result)
-      setTimeout( callback, 5500 )
+      setTimeout( callback, delay )
     })
   }, (err) => {
     if(err) return console.err(err)
@@ -40,7 +41,7 @@ var commentPageURLs = []
 
 const clickMoreLink = () => {
   nightmare
-  .wait(5500)
+  .wait(delay)
   .click('.morelink')
   .wait('body')
   .evaluate(()=> location.href)
