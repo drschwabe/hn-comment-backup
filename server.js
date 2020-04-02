@@ -5,29 +5,42 @@ const async = require('async')
 //Make a config file (./config/local.json to override)
 const config = require('config')
 const user = config.get('user')
-const delay = config.get('delay') //ms 
+const minDelay = config.get('min_delay')
+const maxDelay = config.get('max_delay')
+
+//delay plugin for website-scraper
+class delayPlugin {
+	apply(registerAction) {
+    registerAction('beforeRequest', async ({ resource, requestOptions }) => {
+      const time = Math.round( _.random(minDelay, maxDelay));
+    	await new Promise((resolve) => setTimeout(resolve, time))
+    	return { requestOptions }
+    });
+	}
+}
+
+//There is a "More" link on each page with a URL parameter called 'next' that we need to get in order to build an index of all  pages of the user's comments
+var commentPageURLs = ['https://news.ycombinator.com/threads?id=' + user]
 
 
 const scrape = require('website-scraper');
 const options = {
-  urls: ['https://news.ycombinator.com/threads?id=' + user],
-  directory: process.cwd() + '/output/' + user
+  urls: commentPageURLs,
+  directory: process.cwd() + '/output/' + user,
+  plugins: [ new delayPlugin() ]
 }
 
-const scrapeAllPages = () => {
+const scrapePages = () => {
   console.log('scrape all pages...')
-  async.eachSeries(commentPageURLs, (err, callback) => {
-    scrape(options, (err, result) => {
-    	if(err) return console.log(err)
-    	console.log(result)
-      setTimeout( callback, delay )
-    })
-  }, (err) => {
-    if(err) return console.err(err)
+  scrape(options, (err, result) => {
+  	if(err) return console.log(err)
+  	console.log(result)
     console.log('all done! backup written to: ')
     console.log('process.cwd()' + '/output')
   })
 }
+
+
 
 //Nightmare which will crawl news.ycombinator.com:
 const Nightmare = require('nightmare')
@@ -36,12 +49,11 @@ var nightmare = new Nightmare({
   alwaysOnTop : false
 })
 
-//There is a "More" link on each page with a URL parameter called 'next' that we need to get in order to build an index of all  pages of the user's comments
-var commentPageURLs = []
+
 
 const clickMoreLink = () => {
   nightmare
-  .wait(delay)
+  .wait(_.random(minDelay, maxDelay))
   .click('.morelink')
   .wait('body')
   .evaluate(()=> location.href)
@@ -53,8 +65,8 @@ const clickMoreLink = () => {
   })
   .catch((e) => {
     if(e == 'Unable to find element by selector: .morelink') {
-      console.log('retreived all comment page URLs...')
-      scrapeAllPages()
+      console.log('retreived all comment page URLs!')
+      scrapePages()
     } else {
       console.log(e)
     }
