@@ -11,5 +11,8 @@
     "nightmare": "2.10.0",
     "underscore": "^1.9.1",
     "website-scraper": "^4.0.1"
+  },
+  "scripts": {
+    "start": "node start.js"
   }
 }
