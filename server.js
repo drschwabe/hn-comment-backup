@@ -1,12 +1,18 @@
 //## HN Comment Backup ###
 const _ = require('underscore')
 const async = require('async')
+const fs = require('fs-extra')
 
 //Make a config file (./config/local.json to override)
 const config = require('config')
 const user = config.get('user')
 const minDelay = config.get('min_delay')
 const maxDelay = config.get('max_delay')
+
+const outputDir = process.cwd() + '/output/' + user
+
+if(fs.existsSync(outputDir)) fs.removeSync(outputDir)
+//^ delete if existing, otherwise website-scraper errs
 
 //delay plugin for website-scraper
 class delayPlugin {
@@ -19,24 +25,37 @@ class delayPlugin {
 	}
 }
 
+class renameFilePlugin {
+  apply(registerAction) {
+    registerAction('onResourceSaved', async ({ resource }) => {
+      if(resource.filename.search('.html') === -1 ) return
+      //rename the file based on sequence....
+      //because this event does not happen in a predictable order,
+      //we cross reference the resource URL with commentPageURLs to get the original index
+      let index = _.indexOf( commentPageURLs, resource.url )
+      fs.moveSync( outputDir + '/' + resource.filename ,
+                 `${outputDir}/page_${index}.html`)
+    })
+  }
+}
+
 //There is a "More" link on each page with a URL parameter called 'next' that we need to get in order to build an index of all  pages of the user's comments
 var commentPageURLs = ['https://news.ycombinator.com/threads?id=' + user]
 
 
-const scrape = require('website-scraper');
+const scrape = require('website-scraper')
 const options = {
   urls: commentPageURLs,
-  directory: process.cwd() + '/output/' + user,
-  plugins: [ new delayPlugin() ]
+  directory: outputDir,
+  plugins: [ new delayPlugin(), new renameFilePlugin() ]
 }
 
 const scrapePages = () => {
   console.log('scrape all pages...')
   scrape(options, (err, result) => {
   	if(err) return console.log(err)
-  	console.log(result)
     console.log('all done! backup written to: ')
-    console.log('process.cwd()' + '/output')
+    console.log(process.cwd() + '/output')
   })
 }
 
