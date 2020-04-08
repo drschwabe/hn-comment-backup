@@ -25,6 +25,8 @@ class delayPlugin {
 	}
 }
 
+const cheerio = require('cheerio')
+
 class renameFilePlugin {
   apply(registerAction) {
     registerAction('onResourceSaved', async ({ resource }) => {
@@ -34,8 +36,18 @@ class renameFilePlugin {
       //we cross reference the resource URL with commentPageURLs to get the original index
       let index = _.indexOf( commentPageURLs, resource.url )
       let pageName = index > 0 ? `page_${index}.html` : `index.html`
+      let nextPageName
+      if(  index !== commentPageURLs.length ) nextPageName = `page_${index + 1}.html`
       fs.moveSync( outputDir + '/' + resource.filename ,
                  `${outputDir}/${pageName}`)
+
+      //update the 'More' link to link to the next file:
+      if(nextPageName) {
+        let html = fs.readFileSync( `${outputDir}/${pageName}`, 'utf8' )
+        let $ = cheerio.load( html  )
+        $('.morelink').attr('href', nextPageName)
+        fs.writeFileSync( `${outputDir}/${pageName}`, $.html() )
+      }
     })
   }
 }
@@ -95,6 +107,7 @@ const clickMoreLink = () => {
 
 //go!
 console.log('building list of comment page URLs...')
+console.log(commentPageURLs[0])
 
 //perform the initialization; start on user's comment page 1:
 nightmare
