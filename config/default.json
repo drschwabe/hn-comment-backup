@@ -1,3 +1,5 @@
 {
-  "user" : "pg"
+  "user" : "pg",
+  "min_delay" : 5500,
+  "max_delay" : 11000
 }
