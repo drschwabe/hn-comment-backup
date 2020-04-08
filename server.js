@@ -33,8 +33,9 @@ class renameFilePlugin {
       //because this event does not happen in a predictable order,
       //we cross reference the resource URL with commentPageURLs to get the original index
       let index = _.indexOf( commentPageURLs, resource.url )
+      let pageName = index > 0 ? `page_${index}.html` : `index.html`
       fs.moveSync( outputDir + '/' + resource.filename ,
-                 `${outputDir}/page_${index}.html`)
+                 `${outputDir}/${pageName}`)
     })
   }
 }
