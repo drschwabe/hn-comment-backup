@@ -79,46 +79,41 @@ const scrapePages = () => {
 }
 
 
+//Puppeteer which will crawl news.ycombinator.com:
+const puppeteer = require('puppeteer')
+let page
 
-//Nightmare which will crawl news.ycombinator.com:
-const Nightmare = require('nightmare')
-var nightmare = new Nightmare({
-  show: false,
-  alwaysOnTop : false
-})
-
-
-
-const clickMoreLink = () => {
-  nightmare
-  .wait(_.random(minDelay, maxDelay))
-  .click('.morelink')
-  .wait('body')
-  .evaluate(()=> location.href)
-  .then((result) => {
-    console.log(result)
-    commentPageURLs.push(result)
-    if(_.isEmpty(commentPageURLs)) return console.log('done')
-    clickMoreLink()
-  })
-  .catch((e) => {
-    if(e == 'Unable to find element by selector: .morelink') {
+const clickMoreLink = async () => {
+  await new Promise(r => setTimeout(r, _.random(minDelay, maxDelay)))
+  let more = true
+  try {
+    await page.click('.morelink')
+  } catch (err) {
+    console.log(err)
+    if( err.toString() === "Error: No node found for selector: .morelink" ) {
       console.log(`retreived all comment page URLs! (${commentPageURLs.length} pages)`)
+      more = false 
       scrapePages()
-    } else {
-      console.log(e)
     }
-  })
+  }
+  if(!more) return 
+  let locationHref  = await page.evaluate(() => location.href)
+
+  commentPageURLs.push(locationHref)
+  if(_.isEmpty(commentPageURLs)) return console.log('done')
+
+  clickMoreLink()
 }
 
 //go!
 console.log('building list of comment page URLs...')
-console.log(commentPageURLs[0])
+console.log(commentPageURLs[0]); 
 
-//perform the initialization; start on user's comment page 1:
-nightmare
-.goto('https://news.ycombinator.com/threads?id=' + config.get('user'))
-.wait('body')
-.then(() => {
+(async function() {
+  const browser = await puppeteer.launch( {headless: false, defaultViewport: null } )
+  //perform the initialization; start on user's comment page 1:
+  page = await browser.newPage()
+  await page.goto('https://news.ycombinator.com/threads?id=' + config.get('user'), {waitUntil: 'networkidle2'})  
+  
   clickMoreLink()
-})
+}())
