@@ -14,14 +14,20 @@ const outputDir = process.cwd() + '/output/' + user
 if(fs.existsSync(outputDir)) fs.removeSync(outputDir)
 //^ delete if existing, otherwise website-scraper errs
 
+var baseRequestDelay = 0
 //delay plugin for website-scraper
 class delayPlugin {
 	apply(registerAction) {
     registerAction('beforeRequest', async ({ resource, requestOptions }) => {
-      const time = Math.round( _.random(minDelay, maxDelay));
-    	await new Promise((resolve) => setTimeout(resolve, time))
+      const randomDelay = Math.round( _.random(minDelay, maxDelay))
+      baseRequestDelay = baseRequestDelay + randomDelay //< update the base delay with the new random delay:
+      console.log('waiting ' + baseRequestDelay + ' milliseconds...')
+    	await new Promise((resolve) => setTimeout(() => {
+    	  console.log('download ' + resource.url)
+        resolve()
+      }, baseRequestDelay))
     	return { requestOptions }
-    });
+    })
 	}
 }
 
@@ -97,7 +103,7 @@ const clickMoreLink = () => {
   })
   .catch((e) => {
     if(e == 'Unable to find element by selector: .morelink') {
-      console.log('retreived all comment page URLs!')
+      console.log(`retreived all comment page URLs! (${commentPageURLs.length} pages)`)
       scrapePages()
     } else {
       console.log(e)
