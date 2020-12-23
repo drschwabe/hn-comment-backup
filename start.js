@@ -20,7 +20,7 @@ class delayPlugin {
 	apply(registerAction) {
     registerAction('beforeRequest', async ({ resource, requestOptions }) => {
       const randomDelay = Math.round( _.random(minDelay, maxDelay))
-      baseRequestDelay = baseRequestDelay + randomDelay //< update the base delay with the new random delay:
+      baseRequestDelay = (baseRequestDelay * 0.01) + randomDelay //< update the base delay with the new random delay:
       console.log('waiting ' + baseRequestDelay + ' milliseconds...')
     	await new Promise((resolve) => setTimeout(() => {
     	  console.log('download ' + resource.url)
